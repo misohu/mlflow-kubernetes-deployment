@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mlflow-tracking-server
+spec:
+  selector:
+    matchLabels:
+      app: mlflow-tracking-server
+  template:
+    metadata:
+      labels:
+        app: mlflow-tracking-server
+    spec:
+      containers:
+      - name: mlflow-tracking-server
+        image: misohu/mlflow-tracking-server:2.1.1
+        command:
+        - mlflow
+        - server
+        - --host
+        - 0.0.0.0
+        - --backend-store-uri
+        - $(MLFLOW_TRACKING_URI)
+        - --default-artifact-root
+        - s3://mlflow/
+        - --expose-prometheus
+        - /metrics
+        env:
+        - name: AWS_DEFAULT_REGION
+          value: us-east-1
+        - name: MLFLOW_S3_ENDPOINT_URL
+          value: http://minio.kubeflow:9000
+        envFrom:
+        - secretRef:
+            name: mlflow-server-db-secret
+        - secretRef:
+            name: mlflow-server-minio-secret
+        imagePullPolicy: Always
+        resources: {}
+        ports:
+        - containerPort: 5000
+          name: http
+          protocol: TCP
